@@ -1,0 +1,7 @@
+[theme]
+
+# Primary accent for interactive elements
+primaryColor = '#4b0082'
+
+# Color used for almost all text
+textColor = '#333333'
