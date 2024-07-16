@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 import re
+import json
 import requests as rq
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs
@@ -11,40 +12,40 @@ load_dotenv()
 URL_VIDEO_LIST_FORMAT = 'https://www.youtube.com/watch?v=&list={}'
 URL_TRANSCRIPT_FORMAT = 'https://youtubetranscript.com/?server_vid2={}'
 
+def count_tokens_simple(text):
+    pattern = r'\b\w+\b|[^\w\s]'
+    tokens = re.findall(pattern, text)
+    return len(tokens)
+
+
+@st.cache_data
+def load_models_data(file_path):
+    with open(file_path, 'r') as file:
+        data = json.load(file)["models"]
+        for model in data:
+            model_display_name = model["name"].replace("-", " ").capitalize()
+            if "gpt" in model["name"]:
+                model_display_name = f"OpenAI {model_display_name}"
+            else:
+                model_display_name = f"Groq {model_display_name}"
+            model["display_name"] = model_display_name 
+    return data
 
 def extract_video_id(url):
-    """
-    Extracts the video ID from a YouTube URL.
-
-    Parameters:
-    url (str): The YouTube URL.
-
-    Returns:
-    str: The sanitized video ID or None if no valid ID is found.
-    """
     try:
-        # Parse the URL
         parsed_url = urlparse(url)
-        
-        # Check if the URL is a valid YouTube URL
         if parsed_url.hostname not in ['www.youtube.com', 'youtube.com', 'm.youtube.com', 'youtu.be']:
             return None
-        
-        # Extract the video ID from query parameters
         if parsed_url.hostname in ['www.youtube.com', 'youtube.com', 'm.youtube.com']:
             video_id = parse_qs(parsed_url.query).get('v')
             if video_id:
                 return video_id[0]
-
-        # Extract the video ID from path (for youtu.be short URLs)
         if parsed_url.hostname == 'youtu.be':
-            video_id = parsed_url.path[1:]  # Remove the leading '/'
+            video_id = parsed_url.path[1:]
             return video_id
-
     except Exception as e:
         print(f"Error parsing URL: {e}")
         return None
-
     return None
 
 def get_transcript(video_id):
@@ -54,31 +55,38 @@ def get_transcript(video_id):
     root = ET.fromstring(xml_data)
     return ' '.join([text.text for text in root.findall('.//text')])
 
-
 def handle_submit_model():
     st.session_state.model_set = True
-    st.session_state.loaded_model_values = (
-        st.session_state.llm_name, st.session_state.api_key)
+    for model in model_options:
+        if model["display_name"] == st.session_state.llm_name:
+            st.session_state.loaded_model_values = (model["display_name"], st.session_state.api_key, model["context_length"])
+            break
+        
     
+
 def handle_analyze_video():
     video_id = extract_video_id(st.session_state.video_url)
     transcript = get_transcript(video_id)
-    print("TRASCRIPT", transcript)
+    num_tokens = count_tokens_simple(transcript)
+    st.session_state.num_tokens = num_tokens
     chain = StrategyGeneratorChain()
     analysis = chain.invoke({"transcript": transcript})
     st.session_state.analysis = analysis
 
-        
 def handle_change_model():
     st.session_state.model_set = False
     st.session_state.loaded_model_values = None
-    
+
 def mask_api_key(api_key):
     if len(api_key) > 6:
         return f"{api_key[:5]}{'*' * (len(api_key) - 35)}{api_key[-4:]}"
     else:
         return api_key
 
+def format_model_name(name):
+    words = name.split('-')
+    formatted_words = [word.capitalize() for word in words]
+    return ' '.join(formatted_words)
 
 st.set_page_config(
     page_title="StratifyAI",
@@ -87,57 +95,63 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+st.title("StratifyAI 🧠")
 
-# App title
-st.title("StratifyAI")
-
-# Initialize session state variables
 if "model_set" not in st.session_state:
     st.session_state.model_set = False
 
 if "llm_name" not in st.session_state:
-    # Set default value that exists in the selectbox options
-    st.session_state.llm_name = "OpenAI GPT-3.5 Turbo"
+    st.session_state.llm_name = None
 
 if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 if "video_url" not in st.session_state:
     st.session_state.video_url = ""
-    
+
 if "analysis" not in st.session_state:
     st.session_state.analysis = None
-    
-# Model form (only one form for setting the model and API key)
-if not st.session_state.model_set:
-    with st.form(key='model_form'):
-        col1, col2, col3 = st.columns(
-            3, gap="medium", vertical_alignment="bottom")
-        with col1:
-            st.selectbox("Select LLM provider and model type", [
-                         "OpenAI GPT-3.5 Turbo", "Groq LLaMA3 70b", "Groq Mixtral 8x7b"], key="llm_name")
-        with col2:
+
+if "num_tokens" not in st.session_state:
+    st.session_state.num_tokens = None
+
+if "context_length" not in st.session_state:
+    st.session_state.context_length = ""
+
+model_options = load_models_data("data/models.json")
+
+model_options_names = [model_option["display_name"] for model_option in model_options]
+
+# Sidebar for model and API key input
+with st.sidebar:
+    st.header("Model Selection")
+    if not st.session_state.model_set:
+        with st.form(key='model_form', border=False):
+            st.selectbox("Select LLM provider and model type", model_options_names, key="llm_name")
             st.text_input("API Key", type="password",
                           placeholder="Ex: sk-2t... or gsk_mc12...", key="api_key")
-        with col3:
             st.form_submit_button('Set model', on_click=handle_submit_model)
-            
-# Display model details and allow changing the model
-else:
-    with st.expander("Model details"):
+    else:
         st.text(f"Model name: {st.session_state.loaded_model_values[0]}")
-        st.text(
-            f"API key: {mask_api_key(st.session_state.loaded_model_values[1])}")
-        if st.button("Change Model", on_click=handle_change_model):
+        st.text(f"Context length: {st.session_state.loaded_model_values[2]}")
+        st.text(f"API key: {mask_api_key(st.session_state.loaded_model_values[1])}")
+        if st.button("Reset Model", on_click=handle_change_model):
             st.success("Model settings cleared. Please set the model again.")
-            
 
-with st.form(key="video_url_form"):
-    video_url = st.text_input("Enter YouTube Video URL", key="video_url")
-    st.form_submit_button("Analyse Video", on_click=handle_analyze_video)
+tab1, tabs2 = st.tabs(["Video Analysis", "Models overview"])
 
-if st.session_state.analysis:
-    st.write(st.session_state.analysis)
+with tab1:
+    with st.form(key="video_url_form"):
+        st.text_input("Enter YouTube Video URL", key="video_url")
+        st.form_submit_button("Analyze Video", on_click=handle_analyze_video)
+
+    if st.session_state.analysis:
+        if st.session_state.num_tokens:
+            st.write(f"Number of tokens in the transcript: {st.session_state.num_tokens}")
+        st.write(st.session_state.analysis)
+
+with tabs2:
+    st.dataframe(model_options)
 
 # # Buy Me a Coffee button
 # st.markdown(
