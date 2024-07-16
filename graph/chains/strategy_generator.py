@@ -1,11 +1,18 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 
 
 class StrategyGeneratorChain:
-    def __init__(self):
-        self.llm = ChatGroq(model="llama3-8b-8192")
+    def __init__(self, llm_name, api_key):
+        
+        if "gpt" in llm_name:
+            print("Using OpenAI model")
+            self.llm = ChatOpenAI(model=llm_name, api_key=api_key)
+        else:
+            print("Using Groq model")
+            self.llm = ChatGroq(model=llm_name, api_key=api_key)
         self.prompt = ChatPromptTemplate.from_messages(
             [
                 ("system",

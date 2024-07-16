@@ -7,17 +7,20 @@ import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs
 from graph.chains.strategy_generator import StrategyGeneratorChain
 
+# Load environment variables
 load_dotenv()
 
+# Constants for URL formats
 URL_VIDEO_LIST_FORMAT = 'https://www.youtube.com/watch?v=&list={}'
 URL_TRANSCRIPT_FORMAT = 'https://youtubetranscript.com/?server_vid2={}'
 
+# Helper function to count tokens in text
 def count_tokens_simple(text):
     pattern = r'\b\w+\b|[^\w\s]'
     tokens = re.findall(pattern, text)
     return len(tokens)
 
-
+# Cache the model data loading for efficiency
 @st.cache_data
 def load_models_data(file_path):
     with open(file_path, 'r') as file:
@@ -29,8 +32,10 @@ def load_models_data(file_path):
             else:
                 model_display_name = f"Groq {model_display_name}"
             model["display_name"] = model_display_name 
+    print("Data loaded", data)
     return data
 
+# Helper function to extract video ID from a YouTube URL
 def extract_video_id(url):
     try:
         parsed_url = urlparse(url)
@@ -48,6 +53,7 @@ def extract_video_id(url):
         return None
     return None
 
+# Helper function to get transcript from a YouTube video ID
 def get_transcript(video_id):
     transcript_url = URL_TRANSCRIPT_FORMAT.format(video_id)
     response = rq.get(transcript_url)
@@ -55,48 +61,48 @@ def get_transcript(video_id):
     root = ET.fromstring(xml_data)
     return ' '.join([text.text for text in root.findall('.//text')])
 
+# Handle form submission to set model
 def handle_submit_model():
     st.session_state.model_set = True
     for model in model_options:
         if model["display_name"] == st.session_state.llm_name:
-            st.session_state.loaded_model_values = (model["display_name"], st.session_state.api_key, model["context_length"])
+            st.session_state.loaded_model_values = (model["display_name"], st.session_state.api_key, model["context_length"], model["name"])
             break
-        
-    
 
+# Handle video analysis
 def handle_analyze_video():
     video_id = extract_video_id(st.session_state.video_url)
     transcript = get_transcript(video_id)
     num_tokens = count_tokens_simple(transcript)
     st.session_state.num_tokens = num_tokens
-    chain = StrategyGeneratorChain()
+    chain = StrategyGeneratorChain(st.session_state.loaded_model_values[3], st.session_state.loaded_model_values[1])
     analysis = chain.invoke({"transcript": transcript})
     st.session_state.analysis = analysis
 
+# Handle model change/reset
 def handle_change_model():
     st.session_state.model_set = False
     st.session_state.loaded_model_values = None
 
+# Helper function to mask API key for display
 def mask_api_key(api_key):
     if len(api_key) > 6:
         return f"{api_key[:5]}{'*' * (len(api_key) - 35)}{api_key[-4:]}"
     else:
         return api_key
 
-def format_model_name(name):
-    words = name.split('-')
-    formatted_words = [word.capitalize() for word in words]
-    return ' '.join(formatted_words)
-
+# Streamlit app configuration
 st.set_page_config(
     page_title="StratifyAI",
     page_icon="🧠",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="auto",
 )
 
+# App title
 st.title("StratifyAI 🧠")
 
+# Initialize session state variables
 if "model_set" not in st.session_state:
     st.session_state.model_set = False
 
@@ -118,8 +124,8 @@ if "num_tokens" not in st.session_state:
 if "context_length" not in st.session_state:
     st.session_state.context_length = ""
 
+# Load model options
 model_options = load_models_data("data/models.json")
-
 model_options_names = [model_option["display_name"] for model_option in model_options]
 
 # Sidebar for model and API key input
@@ -138,8 +144,10 @@ with st.sidebar:
         if st.button("Reset Model", on_click=handle_change_model):
             st.success("Model settings cleared. Please set the model again.")
 
+# Main content tabs
 tab1, tabs2 = st.tabs(["Video Analysis", "Models overview"])
 
+# Video Analysis tab
 with tab1:
     with st.form(key="video_url_form"):
         st.text_input("Enter YouTube Video URL", key="video_url")
@@ -150,10 +158,12 @@ with tab1:
             st.write(f"Number of tokens in the transcript: {st.session_state.num_tokens}")
         st.write(st.session_state.analysis)
 
+# Models overview tab
 with tabs2:
     st.dataframe(model_options)
 
-# # Buy Me a Coffee button
+# Buy Me a Coffee button (commented out)
+
 # st.markdown(
 #     """
 #     <a href="https://www.buymeacoffee.com/yourpage" target="_blank">
