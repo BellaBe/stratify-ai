@@ -32,7 +32,6 @@ def load_models_data(file_path):
             else:
                 model_display_name = f"Groq {model_display_name}"
             model["display_name"] = model_display_name 
-    print("Data loaded", data)
     return data
 
 # Helper function to extract video ID from a YouTube URL
@@ -137,12 +136,19 @@ with st.sidebar:
             st.text_input("API Key", type="password",
                           placeholder="Ex: sk-2t... or gsk_mc12...", key="api_key")
             st.form_submit_button('Set model', on_click=handle_submit_model)
+            
+        st.empty()
+            
+        # Links to get API keys
+        st.markdown("If you need help to get an API key, for OpenAI models [click here](https://platform.openai.com/api-keys), for Groq models [click here](https://console.groq.com/keys)")
     else:
         st.text(f"Model name: {st.session_state.loaded_model_values[0]}")
         st.text(f"Context length: {st.session_state.loaded_model_values[2]}")
         st.text(f"API key: {mask_api_key(st.session_state.loaded_model_values[1])}")
         if st.button("Reset Model", on_click=handle_change_model):
             st.success("Model settings cleared. Please set the model again.")
+            
+   
 
 # Main content tabs
 tab1, tabs2 = st.tabs(["Video Analysis", "Models overview"])
