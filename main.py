@@ -154,7 +154,7 @@ model_options_names = [model_option["display_name"]
 
 # Sidebar for model and API key input
 with st.sidebar:
-    st.image("assets/stratify_image.jpg", use_column_width=True)
+    st.image("assets/stratify_image_3.png", use_column_width=True)
     if not st.session_state.model_set:
         st.header("Model Selection")
         with st.form(key='model_form', border=False):
