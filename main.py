@@ -154,8 +154,9 @@ model_options_names = [model_option["display_name"]
 
 # Sidebar for model and API key input
 with st.sidebar:
-    st.header("Model Selection")
+    st.image("assets/stratify_image.jpg", use_column_width=True)
     if not st.session_state.model_set:
+        st.header("Model Selection")
         with st.form(key='model_form', border=False):
             st.selectbox("Select LLM provider and model type",
                          model_options_names, key="llm_name")
@@ -169,6 +170,7 @@ with st.sidebar:
         st.markdown(
             "If you need help to get an API key, for OpenAI models [click here](https://platform.openai.com/api-keys), for Groq models [click here](https://console.groq.com/keys)")
     else:
+        st.header("Model Settings")
         st.text(f"Model name: {st.session_state.loaded_model_values[0]}")
         st.text(f"Context length: {st.session_state.loaded_model_values[2]}")
         st.text(
@@ -182,9 +184,13 @@ tab1, tabs2, tab3 = st.tabs(["Video Analysis", "Models overview", "About"])
 
 # Video Analysis tab
 with tab1:
+    
+    if not st.session_state.model_set:
+        st.success("👈 Please set the model to start analyzing videos")
+
     with st.form(key="video_url_form"):
-        st.text_input("Enter YouTube Video URL", key="video_url")
-        st.form_submit_button("Analyze Video", on_click=handle_analyze_video)
+        st.text_input("Enter YouTube Video URL", disabled=not st.session_state.model_set, key="video_url")
+        st.form_submit_button("Analyze Video", on_click=handle_analyze_video, disabled=not st.session_state.model_set)
 
     if st.session_state.analysis:
         if st.session_state.num_tokens:
