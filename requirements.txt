@@ -1,6 +1,5 @@
 streamlit
 langchain
-python-dotenv
 langgraph
 langchain
 langchain-core
