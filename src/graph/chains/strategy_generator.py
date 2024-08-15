@@ -6,12 +6,10 @@ from langchain_openai import ChatOpenAI
 
 class StrategyGeneratorChain:
     def __init__(self, llm_name, api_key):
-        
+
         if "gpt" in llm_name:
-            print("Using OpenAI model")
             self.llm = ChatOpenAI(model=llm_name, api_key=api_key)
         else:
-            print("Using Groq model")
             self.llm = ChatGroq(model=llm_name, api_key=api_key)
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -32,7 +30,7 @@ class StrategyGeneratorChain:
                     
                     Return the strategy found or "No strategy detected": 
                 """
-                ),
+                 ),
                 ("human",
                  "Transcript: {transcript}"
                  )

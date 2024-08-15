@@ -1,27 +1,48 @@
 import streamlit as st
 
-def use_cases():
+def use_cases(): 
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.markdown(
-            """
-            #### 🎯 **Use Cases**
-            - **Competitive Analysis:** Extract and implement successful strategies from competitor videos to stay ahead in the market.
-            - **Educational Improvement:** Adopt effective teaching methods from successful educational videos to enhance instructional techniques.
-            - **Personal Development:** Enhance skills and knowledge by applying strategies from various tutorial and instructional videos.
-            - **Marketing Strategies:** Analyze successful campaigns and strategies from industry influencers and competitors.
-            - **Research and Development:** Extract methodologies and insights from expert presentations and educational content.
-
-            """
-        )
+        container = st.container(border=True)
+        container.write("**Competitive Analysis:**")
+        container.write("Extract and implement successful strategies from competitor videos to stay ahead in the market.")
     with col2:
-        st.markdown(
-            """
-            #### 🌟 **Benefits**
-            - **Gain a competitive edge** by leveraging insights from industry leaders.
-            - **Improve teaching efficacy** and student outcomes with proven strategies.
-            - **Accelerate personal growth** and skill development with actionable insights.
-            - **Optimize marketing efforts** by applying proven tactics and ideas.
-            - **Enhance research quality** and innovation by integrating advanced strategies and techniques.
-            """
-        )
+        container = st.container(border=True)
+        container.write("**Gain a competitive edge**")
+        container.write("Leverage insights from industry leaders..")
+    
+    with col1:
+        container = st.container(border=True)
+        container.write("**Educational Improvement:**")
+        container.write("Adopt effective teaching methods from successful educational videos to enhance instructional techniques.")
+    with col2:
+        container = st.container(border=True)
+        container.write("**Improve teaching efficacy**")
+        container.write("Get better student outcomes with proven strategies.")
+        
+    with col1:
+        container = st.container(border=True)
+        container.write("**Personal Development:**")
+        container.write("Enhance skills and knowledge by applying strategies from various tutorial and instructional videos.")
+    with col2:
+        container = st.container(border=True)
+        container.write("**Accelerate personal growth**")
+        container.write("Develop skills and knowledge with actionable insights.")
+   
+    with col1:
+        container = st.container(border=True)
+        container.write("**Marketing Strategies:**")
+        container.write("Analyze successful campaigns and strategies from industry influencers and competitors.")
+    with col2:
+        container = st.container(border=True)
+        container.write("**Optimize marketing efforts**")
+        container.write("Apply proven tactics and ideas to improve marketing.")
+        
+    with col1:
+        container = st.container(border=True)
+        container.write("**Research and Development:**")
+        container.write("Extract methodologies and insights from expert presentations and educational content.")
+    with col2:
+        container = st.container(border=True)
+        container.write("**Enhance research quality**")
+        container.write("Integrate advanced strategies and techniques for innovation.")
